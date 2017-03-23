@@ -1,5 +1,13 @@
+Values without threads :
+
 Test for 500 : 1387
 Test for 1000 : 20378
 Test for 1500 : 39612
 Test for 2000 : 97709
 Test for 2500 : 194691
+
+Values with threads :
+
+Test for 500 : 5171
+Test for 1000 : 37259
+Test for 1500 : 121390

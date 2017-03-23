@@ -7,7 +7,7 @@ public class Matrix
   private static long startTime = 0;
   private static long stopTime = 0;
   private static boolean running = false;
-  private static int size = 500;
+  private int size;
 
   public static double[][] multiply(double[][] a, double[][] b)
   {
@@ -23,6 +23,11 @@ public class Matrix
       }
     }
     return c;
+  }
+
+  public void setSize(int size)
+  {
+    this.size = size;
   }
 
   public void startTimer()
@@ -69,6 +74,7 @@ public class Matrix
   {
     double[][] a = generateMatrix(size);
     double[][] b = generateMatrix(size);
+    @SuppressWarnings("unused")
     double[][] result = multiply(a, b);
 //    for (int i = 0; i < size; i++)
 //    {

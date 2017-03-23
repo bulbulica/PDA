@@ -4,10 +4,10 @@ public class MainSimple
 {
   public static void main(String[] args)
   {
-    Matrix matrix = new Matrix();
-    matrix.startTimer();
-    matrix.startProgram();
-    matrix.stopTimer();
-    System.out.println(matrix.getElapsedTime());
+    BenchmarkSimpleMatrix.timeMultiplyMatrix500();
+    BenchmarkSimpleMatrix.timeMultiplyMatrix1000();
+    BenchmarkSimpleMatrix.timeMultiplyMatrix1500();
+    BenchmarkSimpleMatrix.timeMultiplyMatrix2000();
+    BenchmarkSimpleMatrix.timeMultiplyMatrix2500();
   }
 }
