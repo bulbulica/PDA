@@ -2,41 +2,38 @@
 #include <stdlib.h>
 #include <mpi.h>
 
-const int INFINITY = 1000000;
+const int INFINITY = 999;
 
-void Read_matrix(int local_mat[], int n, int my_rank, int p, MPI_Comm comm) 
+void Read_matrix(int local_mat[], int n, int my_rank, int p, MPI_Comm comm)
 {
 	int i, j;
 	int* temp_mat = NULL;
 	FILE *f = fopen("file.txt", "r");
-	if (my_rank == 0) 
+	if (my_rank == 0)
 	{
 		temp_mat = (int *)malloc(n*n * sizeof(int));
 		for (i = 0; i < n; i++)
 			for (j = 0; j < n; j++)
 				fscanf(f, "%d", &temp_mat[i*n + j]);
-		MPI_Scatter(temp_mat, n*n / p, MPI_INT,
-			local_mat, n*n / p, MPI_INT, 0, comm);
+		MPI_Scatter(temp_mat, n*n / p, MPI_INT, local_mat, n*n / p, MPI_INT, 0, comm);
 		free(temp_mat);
 	}
-	else 
+	else
 	{
-		MPI_Scatter(temp_mat, n*n / p, MPI_INT,
-			local_mat, n*n / p, MPI_INT, 0, comm);
+		MPI_Scatter(temp_mat, n*n / p, MPI_INT, local_mat, n*n / p, MPI_INT, 0, comm);
 	}
 	fclose(f);
 }
 
-void Print_matrix(int local_mat[], int n, int my_rank, int p, MPI_Comm comm) 
+void Print_matrix(int local_mat[], int n, int my_rank, int p, MPI_Comm comm)
 {
 	int i, j;
 	int* temp_mat = NULL;
-	if (my_rank == 0) 
+	if (my_rank == 0)
 	{
 		temp_mat = (int *)malloc(n*n * sizeof(int));
-		MPI_Gather(local_mat, n*n / p, MPI_INT,
-			temp_mat, n*n / p, MPI_INT, 0, comm);
-		for (i = 0; i < n; i++) 
+		MPI_Gather(local_mat, n*n / p, MPI_INT, temp_mat, n*n / p, MPI_INT, 0, comm);
+		for (i = 0; i < n; i++)
 		{
 			for (j = 0; j < n; j++)
 				if (temp_mat[i*n + j] == INFINITY)
@@ -47,38 +44,13 @@ void Print_matrix(int local_mat[], int n, int my_rank, int p, MPI_Comm comm)
 		}
 		free(temp_mat);
 	}
-	else 
+	else
 	{
-		MPI_Gather(local_mat, n*n / p, MPI_INT,
-			temp_mat, n*n / p, MPI_INT, 0, comm);
+		MPI_Gather(local_mat, n*n / p, MPI_INT, temp_mat, n*n / p, MPI_INT, 0, comm);
 	}
 }
 
-/*
-void Print_row(int local_mat[], int n, int my_rank, int i) 
-{
-	char char_int[100];
-	char char_row[1000];
-	int j, offset = 0;
-	for (j = 0; j < n; j++) 
-	{
-		if (local_mat[i*n + j] == INFINITY)
-			printf("%d ", i);
-		else
-			printf("%d ", local_mat[i*n + j]);
-		printf("%s", char_row + offset);
-		offset += strlen(char_int);
-	}
-	printf("Proc %d > row %d = %s\n", my_rank, i, char_row);
-}
-*/
-
-int Owner(int k, int p, int n) 
-{
-	return k / (n / p);
-}
-
-void Copy_row(int local_mat[], int n, int p, int row_k[], int k) 
+void Copy_row(int local_mat[], int n, int p, int row_k[], int k)
 {
 	int j;
 	int local_k = k % (n / p);
@@ -86,23 +58,22 @@ void Copy_row(int local_mat[], int n, int p, int row_k[], int k)
 		row_k[j] = local_mat[local_k*n + j];
 }
 
-void Floyd(int local_mat[], int n, int my_rank, int p, MPI_Comm comm) 
+void Floyd(int local_mat[], int n, int my_rank, int p, MPI_Comm comm)
 {
 	int global_k, local_i, global_j, temp, temp2;
 	int root;
 	int* row_k = (int *)malloc(n * sizeof(int));
-	for (global_k = 0; global_k < n; global_k++) 
+	for (global_k = 0; global_k < n; global_k++)
 	{
-		root = Owner(global_k, p, n);
+		root = global_k / (n / p);
 		if (my_rank == root)
 			Copy_row(local_mat, n, p, row_k, global_k);
 		MPI_Bcast(row_k, n, MPI_INT, root, comm);
 		for (local_i = 0; local_i < n / p; local_i++)
-			for (global_j = 0; global_j < n; global_j++) 
+			for (global_j = 0; global_j < n; global_j++)
 			{
 				temp = local_mat[local_i*n + global_k] + row_k[global_j];
 				temp2 = local_mat[local_i*n + global_j];
-				printf("%d, %d\n", temp, temp2);
 				if (temp < temp2)
 					local_mat[local_i*n + global_j] = temp;
 			}
@@ -110,35 +81,33 @@ void Floyd(int local_mat[], int n, int my_rank, int p, MPI_Comm comm)
 	free(row_k);
 }
 
-int main(int argc, char* argv[]) 
+int main(int argc, char* argv[])
 {
 	int n;
 	int* local_mat;
-	MPI_Comm comm;
-	int p, my_rank;
+	int p, my_rank, x;
 
 	MPI_Init(&argc, &argv);
-	comm = MPI_COMM_WORLD;
-	MPI_Comm_size(comm, &p);
-	MPI_Comm_rank(comm, &my_rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &p);
+	MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 
-	n = 3;
+	n = 6;
 
-	MPI_Bcast(&n, 1, MPI_INT, 0, comm);
+	MPI_Bcast(&n, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	local_mat = (int *)malloc(n*n / p * sizeof(int));
 
-	Read_matrix(local_mat, n, my_rank, p, comm);
+	Read_matrix(local_mat, n, my_rank, p, MPI_COMM_WORLD);
 
-	///*
-	Print_matrix(local_mat, n, my_rank, p, comm);
+	/*
+	Print_matrix(local_mat, n, my_rank, p, MPI_COMM_WORLD);
 	printf("\n");
-	//*/
+	*/
 
-	Floyd(local_mat, n, my_rank, p, comm);
+	Floyd(local_mat, n, my_rank, p, MPI_COMM_WORLD);
 
-	if (my_rank == 0) 
+	if (my_rank == 0)
 		printf("Sol :\n");
-	Print_matrix(local_mat, n, my_rank, p, comm);
+	Print_matrix(local_mat, n, my_rank, p, MPI_COMM_WORLD);
 
 	free(local_mat);
 	MPI_Finalize();
